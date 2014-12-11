@@ -24,7 +24,11 @@
  */
 package org.spongepowered.mod.asm.util;
 
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.eventhandler.Event;
+import net.minecraftforge.fml.relauncher.Side;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -141,7 +145,9 @@ public class ASMEventListenerFactory {
         //     }
         //
         //     public void <inputMethod> (<inputMethodType event) {
-        //         ((outputTargetType) this.target).outputMethod((outputParameteType) event);
+        //         if (FMLCommonHander.instance().getEffectiveSide() == Side.SERVER) {
+        //           ((outputTargetType) this.target).outputMethod((outputParameteType) event);
+        //         }
         //         return
         //     }
         // }
@@ -184,6 +190,16 @@ public class ASMEventListenerFactory {
         mv = cw.visitMethod(Opcodes.ACC_PUBLIC, inputName, inputMethodDescriptor, null, null);
         mv.visitCode();
 
+        // if(FMLCommonHander.instance().getEffectiveSide() == Side.SERVER)
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "net/minecraftforge/fml/common/FMLCommonHandler", "instance",
+                           "()Lnet/minecraftforge/fml/common/FMLCommonHandler;", false);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "net/minecraftforge/fml/common/FMLCommonHandler", "getEffectiveSide",
+                           "()Lnet/minecraftforge/fml/relauncher/Side;", false);
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "net/minecraftforge/fml/relauncher/Side", "SERVER", "Lnet/minecraftforge/fml/relauncher/Side;");
+
+        Label notServer = new Label();
+        mv.visitJumpInsn(Opcodes.IF_ACMPNE, notServer);
+
         // push((casted) this.target)
         mv.visitVarInsn(Opcodes.ALOAD, 0); // Loads this
         mv.visitFieldInsn(Opcodes.GETFIELD, classNameDesc, "target", "Ljava/lang/Object;");
@@ -195,6 +211,10 @@ public class ASMEventListenerFactory {
 
         // ((outputTargetType) this.target).outputMethod((outputParameteType) event);
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, outputTargetTypeIntName, outputName, outputMethodDescriptor, isOutputInterface);
+
+        // Label for jump from if check
+        mv.visitLabel(notServer);
+        mv.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
 
         // return
         mv.visitInsn(Opcodes.RETURN);
