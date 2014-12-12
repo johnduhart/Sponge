@@ -29,6 +29,7 @@ import com.google.common.collect.Maps;
 import com.google.common.reflect.TypeToken;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.event.FMLEvent;
+import net.minecraftforge.fml.relauncher.Side;
 import org.spongepowered.api.service.event.EventManager;
 import org.spongepowered.api.util.annotation.NonnullByDefault;
 import org.spongepowered.api.util.event.Event;
@@ -122,6 +123,10 @@ public class SpongeEventManager implements EventManager {
             return false;
         }
         return true;
+    }
+
+    public static boolean isServerEvent(net.minecraftforge.fml.common.eventhandler.Event ev) {
+        return FMLCommonHandler.instance().getEffectiveSide() == Side.SERVER;
     }
 
     private Map<Method, Subscribe> getAnnotationMap(Object o) {

@@ -24,6 +24,7 @@
  */
 package org.spongepowered.mod.asm.util;
 
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.Event;
 import net.minecraftforge.fml.relauncher.Side;
@@ -33,6 +34,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.util.CheckClassAdapter;
+import org.spongepowered.mod.event.SpongeEventManager;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -145,7 +147,7 @@ public class ASMEventListenerFactory {
         //     }
         //
         //     public void <inputMethod> (<inputMethodType event) {
-        //         if (FMLCommonHander.instance().getEffectiveSide() == Side.SERVER) {
+        //         if (SpongeEventManager.isServerEvent(event)) {
         //           ((outputTargetType) this.target).outputMethod((outputParameteType) event);
         //         }
         //         return
@@ -190,15 +192,13 @@ public class ASMEventListenerFactory {
         mv = cw.visitMethod(Opcodes.ACC_PUBLIC, inputName, inputMethodDescriptor, null, null);
         mv.visitCode();
 
-        // if(FMLCommonHander.instance().getEffectiveSide() == Side.SERVER)
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "net/minecraftforge/fml/common/FMLCommonHandler", "instance",
-                           "()Lnet/minecraftforge/fml/common/FMLCommonHandler;", false);
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "net/minecraftforge/fml/common/FMLCommonHandler", "getEffectiveSide",
-                           "()Lnet/minecraftforge/fml/relauncher/Side;", false);
-        mv.visitFieldInsn(Opcodes.GETSTATIC, "net/minecraftforge/fml/relauncher/Side", "SERVER", "Lnet/minecraftforge/fml/relauncher/Side;");
+        // if (SpongeEventManager.isServerEvent(event))
+        mv.visitVarInsn(Opcodes.ALOAD, 1);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "org/spongepowered/mod/event/SpongeEventManager", "isServerEvent",
+                           "(Lnet/minecraftforge/fml/common/eventhandler/Event;)Z", false);
 
         Label notServer = new Label();
-        mv.visitJumpInsn(Opcodes.IF_ACMPNE, notServer);
+        mv.visitJumpInsn(Opcodes.IFEQ, notServer);
 
         // push((casted) this.target)
         mv.visitVarInsn(Opcodes.ALOAD, 0); // Loads this
