@@ -672,12 +672,13 @@ public class SpongeGameRegistry implements GameRegistry {
             }
         }
 
-        TextStyles.OBFUSCATED = (Base) textStyleMappings.get("OBFUSCATED");
-        TextStyles.BOLD = (Base) textStyleMappings.get("BOLD");
-        TextStyles.STRIKETHROUGH = (Base) textStyleMappings.get("STRIKETHROUGH");
-        TextStyles.UNDERLINE = (Base) textStyleMappings.get("UNDERLINE");
-        TextStyles.ITALIC = (Base) textStyleMappings.get("ITALIC");
-        TextStyles.RESET = (Base) textStyleMappings.get("RESET");
+        for (Field f : TextStyles.class.getDeclaredFields()) {
+            try {
+                f.set(null, textStyleMappings.get(f.getName()));
+            } catch (Exception e) {
+                // e.printStackTrace();
+            }
+        }
 
     }
 
